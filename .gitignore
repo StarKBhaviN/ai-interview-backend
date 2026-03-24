@@ -1,0 +1,100 @@
+# ----------------------
+# Python cache
+# ----------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ----------------------
+# Virtual Environment
+# ----------------------
+venv/
+.env/
+.venv/
+env/
+
+# ----------------------
+# Environment Variables
+# ----------------------
+.env
+.env.*
+
+# ----------------------
+# Logs & Runtime
+# ----------------------
+*.log
+logs/
+*.pid
+*.seed
+
+# ----------------------
+# OS Files
+# ----------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------
+# IDE / Editor
+# ----------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----------------------
+# Build / Distribution
+# ----------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ----------------------
+# Python Packaging
+# ----------------------
+*.egg
+pip-wheel-metadata/
+
+# ----------------------
+# Testing
+# ----------------------
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ----------------------
+# Jupyter Notebook
+# ----------------------
+.ipynb_checkpoints
+
+# ----------------------
+# Database Files
+# ----------------------
+*.sqlite3
+*.db
+
+# ----------------------
+# FastAPI / Uvicorn
+# ----------------------
+*.uvicorn
+
+# ----------------------
+# Uploaded Files (IMPORTANT 🔥)
+# ----------------------
+uploads/
+temp/
+*.pdf
+*.wav
+
+# ----------------------
+# AI Models / Large Files
+# ----------------------
+models/
+*.pt
+*.pth
+*.onnx
+
+# ----------------------
+# Node (if mixed project)
+# ----------------------
+node_modules/
