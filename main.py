@@ -1,9 +1,19 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
 
 from routes import resume
+from services.speech_to_text import transcribe_audio
+from services.nlp import (
+    extract_keywords,
+    analyze_sentiment,
+    calculate_relevance,
+    calculate_confidence,
+    match_skills,
+    is_technical_question
+)
+
 
 app = FastAPI(title="AI Interview Inference Engine")
 
@@ -21,29 +31,52 @@ class AnalysisResponse(BaseModel):
     confidence_score: float
     sentiment: str
     keywords_found: list[str]
+    is_technical: bool
 
 @app.get("/")
 async def root():
     return {"status": "AI Engine Online", "models_loaded": ["Whisper-Base", "RoBERTa-Relevance", "Wav2Vec-Confidence"]}
 
 @app.post("/analyze-audio", response_model=AnalysisResponse)
-async def analyze_audio(file: UploadFile = File(...)):
-    # In a real implementation:
-    # 1. Save uploaded file to /tmp/
-    # 2. Run Whisper for STT
-    # 3. Run fine-tuned BERT/RoBERTa for relevance
-    # 4. Run Wav2Vec 2.0 for sentiment/confidence
+async def analyze_audio(file: UploadFile = File(...), question: str = Form(None), skills: str = Form(None)):
+    contents = await file.read()
+
+    # ✅ Step 1: Speech → Text
+    transcript = transcribe_audio(contents)
+
+    # ✅ Step 2: NLP Processing
+    keywords = extract_keywords(transcript)
+    sentiment = analyze_sentiment(transcript)
+
+    # Process skills from frontend
+    resume_skills = [s.strip().lower() for s in skills.split(',')] if skills else []
     
-    # Mock Processing
-    time.sleep(2) # Simulate AI workload
+    # If no skills from frontend, fallback (though frontend should send them)
+    if not resume_skills:
+        resume_skills = ["react", "node", "python", "mongodb"]
+
+    relevance = calculate_relevance(question, transcript) if question else 0.0
+    confidence = calculate_confidence(transcript)
     
+    # Identify which resume skills were mentioned
+    matched_skills = match_skills(transcript, resume_skills)
+    
+    # Combine keywords with matched skills for a better response
+    all_keywords = list(set(keywords + matched_skills))
+
+    # Identify if question is technical
+    is_tech = is_technical_question(question) if question else False
+
     return AnalysisResponse(
-        transcript="The candidate explained their experience with React hooks and context API very effectively.",
-        relevance_score=0.92,
-        confidence_score=0.88,
-        sentiment="Professional/Confident",
-        keywords_found=["React", "Hooks", "Context API"]
+        transcript=transcript,
+        relevance_score=relevance,
+        confidence_score=confidence,
+        sentiment=sentiment,
+        keywords_found=all_keywords,
+        is_technical=is_tech
     )
+
+
 
 @app.post("/check-cheating")
 async def check_cheating(frame: UploadFile = File(...)):
