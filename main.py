@@ -44,19 +44,28 @@ async def analyze_audio(file: UploadFile = File(...), question: str = Form(None)
     # ✅ Step 1: Speech → Text
     transcript = transcribe_audio(contents)
 
-    # ✅ Step 2: NLP Processing
+    # ✅ Step 2: NLP & Audio Processing
+    import tempfile
+    import os
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+
+    try:
+        confidence = calculate_confidence(transcript, tmp_path)
+    finally:
+        os.remove(tmp_path)
+
     keywords = extract_keywords(transcript)
     sentiment = analyze_sentiment(transcript)
 
     # Process skills from frontend
     resume_skills = [s.strip().lower() for s in skills.split(',')] if skills else []
-    
-    # If no skills from frontend, fallback (though frontend should send them)
     if not resume_skills:
         resume_skills = ["react", "node", "python", "mongodb"]
 
     relevance = calculate_relevance(question, transcript) if question else 0.0
-    confidence = calculate_confidence(transcript)
     
     # Identify which resume skills were mentioned
     matched_skills = match_skills(transcript, resume_skills)
@@ -78,10 +87,26 @@ async def analyze_audio(file: UploadFile = File(...), question: str = Form(None)
 
 
 
+from services.proctoring import engine as proctoring_engine
+
 @app.post("/check-cheating")
-async def check_cheating(frame: UploadFile = File(...)):
-    # Placeholder for MediaPipe gaze tracking/person detection
-    return {"cheat_detected": False, "flags": []}
+async def check_cheating(
+    frame: UploadFile = File(...),
+    tab_switched: bool = Form(False),
+    mic_muted: bool = Form(False)
+):
+    contents = await frame.read()
+    result = await proctoring_engine.analyze_frame(contents)
+    
+    # Add frontend-detected flags to the result
+    if tab_switched:
+        result["flags"].append("Tab switching detected")
+        result["cheat_detected"] = True
+    if mic_muted:
+        result["flags"].append("Microphone muted")
+        result["cheat_detected"] = True
+        
+    return result
 
 app.include_router(resume.router, prefix="/api")
 

@@ -1,6 +1,8 @@
 import re
 from textblob import TextBlob
 from sentence_transformers import SentenceTransformer, util
+import librosa
+import numpy as np
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -90,17 +92,53 @@ def is_technical_question(question: str) -> bool:
 
 
 # ------------------ CONFIDENCE ------------------
-def calculate_confidence(transcript: str):
-
+def calculate_confidence(transcript: str, audio_path: str = None):
+    # 1. Transcript-based (Filler words)
     words = transcript.split()
     total_words = len(words)
-
     fillers = ["um", "uh", "like", "you know", "hmm"]
     filler_count = sum(transcript.lower().count(f) for f in fillers)
+    
+    text_confidence = 1.0
+    if total_words > 0:
+        text_confidence = max(0, 1 - (filler_count / total_words) * 3) # Penalty multiplier
 
-    if total_words == 0:
-        return 0.0
+    # 2. Audio-based (Voice features)
+    audio_confidence = 0.8 # Fallback
+    
+    if audio_path:
+        try:
+            # Load with very short duration to keep it fast
+            y, sr = librosa.load(audio_path, duration=30)
+            
+            # RMS Energy (Volume)
+            rms = librosa.feature.rms(y=y)[0]
+            avg_rms = np.mean(rms)
+            # Normalize RMS: 0.01 is very quiet, 0.05 is good energy
+            energy_score = min(1.0, avg_rms / 0.04) 
 
-    confidence = max(0, 1 - (filler_count / total_words))
+            # Silent Intervals (Hesitation)
+            non_silent = librosa.effects.split(y, top_db=25)
+            total_duration = len(y) / sr
+            if total_duration > 0:
+                speech_duration = sum([(end - start) for start, end in non_silent]) / sr
+                silence_ratio = (total_duration - speech_duration) / total_duration
+                # High silence ratio = low confidence
+                hesitation_score = max(0, 1 - silence_ratio * 1.5)
+            else:
+                hesitation_score = 0.5
 
-    return round(confidence, 2)
+            # Speech Rate (Estimating syllables)
+            onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+            tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
+            rate_score = min(1.0, tempo / 120) if isinstance(tempo, (float, int)) else 0.8
+
+            audio_confidence = (energy_score * 0.4) + (hesitation_score * 0.4) + (rate_score * 0.2)
+            
+        except Exception as e:
+            print(f"Audio analysis error: {e}")
+            audio_confidence = 0.7
+
+    # Weighted Average: 70% Voice, 30% Text Clarity
+    final_confidence = (audio_confidence * 0.7) + (text_confidence * 0.3)
+    return round(float(final_confidence), 2)
