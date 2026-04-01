@@ -55,7 +55,11 @@ def calculate_relevance(question: str, answer: str):
     if not question:
         return 0.5  # Neutral fallback
 
-    # 1. Semantic Similarity
+    # 1. Strict Content Check
+    if not answer or len(answer.strip().split()) < 3:
+        return 0.05 # Near zero for non-responses
+
+    # 2. Semantic Similarity
     emb1 = model.encode(question, convert_to_tensor=True)
     emb2 = model.encode(answer, convert_to_tensor=True)
     similarity = util.pytorch_cos_sim(emb1, emb2).item()
@@ -93,6 +97,10 @@ def is_technical_question(question: str) -> bool:
 
 # ------------------ CONFIDENCE ------------------
 def calculate_confidence(transcript: str, audio_path: str = None):
+    # 0. Strict Content Check
+    if not transcript or len(transcript.strip().split()) < 2:
+        return 0.05 # Near zero for no speech
+
     # 1. Transcript-based (Filler words)
     words = transcript.split()
     total_words = len(words)
@@ -126,14 +134,19 @@ def calculate_confidence(transcript: str, audio_path: str = None):
                 # High silence ratio = low confidence
                 hesitation_score = max(0, 1 - silence_ratio * 1.5)
             else:
-                hesitation_score = 0.5
+                hesitation_score = 0.1
+                energy_score = 0.1 # Very quiet
 
             # Speech Rate (Estimating syllables)
             onset_env = librosa.onset.onset_strength(y=y, sr=sr)
             tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
             rate_score = min(1.0, tempo / 120) if isinstance(tempo, (float, int)) else 0.8
 
-            audio_confidence = (energy_score * 0.4) + (hesitation_score * 0.4) + (rate_score * 0.2)
+            if energy_score < 0.15:
+                # Override: If volume is very low, it's not a confident answer
+                audio_confidence = energy_score
+            else:
+                audio_confidence = (energy_score * 0.4) + (hesitation_score * 0.4) + (rate_score * 0.2)
             
         except Exception as e:
             print(f"Audio analysis error: {e}")

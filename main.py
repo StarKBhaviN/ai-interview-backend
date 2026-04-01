@@ -88,6 +88,8 @@ async def analyze_audio(file: UploadFile = File(...), question: str = Form(None)
 
 
 from services.proctoring import engine as proctoring_engine
+from services.reporter import reporter
+from services.questions import question_bank
 
 @app.post("/check-cheating")
 async def check_cheating(
@@ -107,6 +109,22 @@ async def check_cheating(
         result["cheat_detected"] = True
         
     return result
+
+@app.post("/generate-report")
+async def generate_report(data: dict):
+    # Data is expected to be { "results": [...], "warnings": [...] }
+    results = data.get("results", [])
+    warnings = data.get("warnings", [])
+    report = reporter.generate_report(results, warnings)
+    return report
+
+@app.post("/api/generate-questions")
+async def generate_questions(data: dict):
+    # Data: { "skills": [...], "position": "..." }
+    skills = data.get("skills", ["general"])
+    position = data.get("position", "Candidate")
+    session = question_bank.generate_session(skills, position)
+    return session
 
 app.include_router(resume.router, prefix="/api")
 
