@@ -1,0 +1,23 @@
+{
+  "technical": [
+    "Python", "Java", "C++", "C#", "Ruby", "PHP", "Go", "Rust", "Swift", "Kotlin", "TypeScript", "JavaScript",
+    "HTML", "CSS", "SQL", "NoSQL", "MongoDB", "PostgreSQL", "MySQL", "SQLite", "Firebase", "Redis", "Elasticsearch",
+    "React", "Angular", "Vue", "Next.js", "Nuxt.js", "Svelte", "D3.js", "Three.js",
+    "Node.js", "Express", "Django", "Flask", "FastAPI", "Spring Boot", "Laravel", "Ruby on Rails",
+    "AWS", "Azure", "GCP", "DigitalOcean", "Heroku", "Vercel", "Netlify",
+    "Docker", "Kubernetes", "Terraform", "Ansible", "Jenkins", "GitHub Actions", "GitLab CI", 
+    "Git", "Bitbucket", "Subversion",
+    "TensorFlow", "PyTorch", "Keras", "Scikit-Learn", "Pandas", "NumPy", "Matplotlib", "Seaborn",
+    "NLP", "Natural Language Processing", "Computer Vision", "CV", "Generative AI", "LLM", "RAG",
+    "Unity", "Unreal Engine", "Godot",
+    "Android Development", "iOS Development", "Flutter", "React Native", "Xamarin",
+    "REST API", "GraphQL", "gRPC", "WebSockets", "Microservices", "Event-Driven Architecture",
+    "Security", "Penetration Testing", "Cryptography", "OAuth", "JWT",
+    "Blockchain", "Smart Contracts", "Solidity", "Web3.js", "Ethers.js"
+  ],
+  "soft": [
+    "Communication", "Teamwork", "Leadership", "Problem Solving", "Critical Thinking", "Adaptability",
+    "Time Management", "Collaboration", "Organization", "Interpersonal", "Creativity", "Attention to Detail",
+    "Mentoring", "Public Speaking", "Conflict Resolution", "Negotiation", "Empathy", "Decision Making"
+  ]
+}

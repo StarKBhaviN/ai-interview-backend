@@ -1,0 +1,211 @@
+[
+  {
+    "question": "Explain how React hooks work",
+    "answer": "React hooks like useState and useEffect allow functional components to manage state and side effects without using class components.",
+    "score": 0.95
+  },
+  {
+    "question": "Explain how React hooks work",
+    "answer": "Hooks are a feature introduced in React 16.8 that lets developers use state and lifecycle methods inside functional components.",
+    "score": 0.9
+  },
+  {
+    "question": "Explain how React hooks work",
+    "answer": "React is a JavaScript library used for building UI.",
+    "score": 0.3
+  },
+  {
+    "question": "Explain how React hooks work",
+    "answer": "I enjoy coding in React and building applications.",
+    "score": 0.1
+  },
+
+  {
+    "question": "What is REST API?",
+    "answer": "REST API is an architectural style that uses HTTP methods like GET, POST, PUT, DELETE to perform operations on resources.",
+    "score": 0.95
+  },
+  {
+    "question": "What is REST API?",
+    "answer": "It allows communication between client and server using stateless requests.",
+    "score": 0.85
+  },
+  {
+    "question": "What is REST API?",
+    "answer": "API means application programming interface.",
+    "score": 0.4
+  },
+  {
+    "question": "What is REST API?",
+    "answer": "I have worked with Node.js and Express.",
+    "score": 0.2
+  },
+
+  {
+    "question": "Explain OOP concepts",
+    "answer": "OOP concepts include encapsulation, inheritance, polymorphism, and abstraction which help in structuring code efficiently.",
+    "score": 0.95
+  },
+  {
+    "question": "Explain OOP concepts",
+    "answer": "Object-oriented programming organizes code using objects and classes.",
+    "score": 0.85
+  },
+  {
+    "question": "Explain OOP concepts",
+    "answer": "Classes are used in programming.",
+    "score": 0.4
+  },
+  {
+    "question": "Explain OOP concepts",
+    "answer": "I like programming in Java.",
+    "score": 0.1
+  },
+
+  {
+    "question": "What is a database index?",
+    "answer": "A database index improves query performance by allowing faster data retrieval using data structures like B-trees.",
+    "score": 0.95
+  },
+  {
+    "question": "What is a database index?",
+    "answer": "Indexes are used to speed up SELECT queries in databases.",
+    "score": 0.85
+  },
+  {
+    "question": "What is a database index?",
+    "answer": "Databases store data in tables.",
+    "score": 0.3
+  },
+  {
+    "question": "What is a database index?",
+    "answer": "I have used MongoDB in my project.",
+    "score": 0.2
+  },
+
+  {
+    "question": "Explain event loop in Node.js",
+    "answer": "The event loop in Node.js handles asynchronous operations by processing callbacks in a non-blocking manner.",
+    "score": 0.95
+  },
+  {
+    "question": "Explain event loop in Node.js",
+    "answer": "It allows Node.js to perform non-blocking I/O operations efficiently.",
+    "score": 0.9
+  },
+  {
+    "question": "Explain event loop in Node.js",
+    "answer": "Node.js is built on Chrome's V8 engine.",
+    "score": 0.4
+  },
+  {
+    "question": "Explain event loop in Node.js",
+    "answer": "I like backend development.",
+    "score": 0.1
+  },
+
+  {
+    "question": "What is normalization in DBMS?",
+    "answer": "Normalization is the process of organizing data to reduce redundancy and improve data integrity.",
+    "score": 0.95
+  },
+  {
+    "question": "What is normalization in DBMS?",
+    "answer": "It divides tables into smaller tables and defines relationships between them.",
+    "score": 0.9
+  },
+  {
+    "question": "What is normalization in DBMS?",
+    "answer": "DBMS stores data in structured format.",
+    "score": 0.3
+  },
+  {
+    "question": "What is normalization in DBMS?",
+    "answer": "I have learned SQL queries.",
+    "score": 0.2
+  },
+
+  {
+    "question": "Explain difference between SQL and NoSQL",
+    "answer": "SQL databases are relational and structured, while NoSQL databases are non-relational and flexible in schema design.",
+    "score": 0.95
+  },
+  {
+    "question": "Explain difference between SQL and NoSQL",
+    "answer": "SQL uses tables whereas NoSQL uses documents or key-value pairs.",
+    "score": 0.9
+  },
+  {
+    "question": "Explain difference between SQL and NoSQL",
+    "answer": "Both are used to store data.",
+    "score": 0.5
+  },
+  {
+    "question": "Explain difference between SQL and NoSQL",
+    "answer": "I have used MongoDB and MySQL.",
+    "score": 0.3
+  },
+
+  {
+    "question": "What is JWT authentication?",
+    "answer": "JWT is a token-based authentication method where a signed token is used to verify user identity.",
+    "score": 0.95
+  },
+  {
+    "question": "What is JWT authentication?",
+    "answer": "It contains header, payload, and signature for secure data exchange.",
+    "score": 0.9
+  },
+  {
+    "question": "What is JWT authentication?",
+    "answer": "Authentication is used for login systems.",
+    "score": 0.4
+  },
+  {
+    "question": "What is JWT authentication?",
+    "answer": "I have implemented login pages.",
+    "score": 0.2
+  },
+
+  {
+    "question": "Explain MVC architecture",
+    "answer": "MVC stands for Model, View, Controller which separates application logic, UI, and control flow.",
+    "score": 0.95
+  },
+  {
+    "question": "Explain MVC architecture",
+    "answer": "Model handles data, View handles UI, and Controller handles user input.",
+    "score": 0.9
+  },
+  {
+    "question": "Explain MVC architecture",
+    "answer": "It is a design pattern.",
+    "score": 0.5
+  },
+  {
+    "question": "Explain MVC architecture",
+    "answer": "I have built web apps using React.",
+    "score": 0.2
+  },
+
+  {
+    "question": "Tell me about your background",
+    "answer": "I am a computer engineering student with experience in full-stack development using React, Node.js, and MongoDB, and I have built real-world applications.",
+    "score": 0.95
+  },
+  {
+    "question": "Tell me about your background",
+    "answer": "I have worked on multiple projects and enjoy solving problems.",
+    "score": 0.8
+  },
+  {
+    "question": "Tell me about your background",
+    "answer": "I like coding.",
+    "score": 0.3
+  },
+  {
+    "question": "Tell me about your background",
+    "answer": "My name is John.",
+    "score": 0.1
+  }
+]

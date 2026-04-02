@@ -2,28 +2,46 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
+import os
+import tempfile
+import json
+import threading
 
-from routes import resume
-from services.speech_to_text import transcribe_audio
+# --- ROUTES ---
+from routes import resume, admin
+
+# --- AI MODELS ---
+from ai_models.stt import get_stt_transcriber
+from ai_models.anti_cheat import get_anti_cheat_monitor
+from ai_models.relevance_scorer import get_relevance_scorer
+from ai_models.confidence_analyzer import get_confidence_analyzer
+
+# --- SERVICES ---
 from services.nlp import (
     extract_keywords,
-    analyze_sentiment,
     calculate_relevance,
     calculate_confidence,
     match_skills,
     is_technical_question
 )
+from services.evaluation import engine as evaluation_engine
+from services.question_generator import generator as question_generator
+from services.reporter import reporter
 
-
-app = FastAPI(title="AI Interview Inference Engine")
+# --- INITIALIZATION ---
+app = FastAPI(title="AI Interview Engine - v2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# AI Singletons
+transcriber = get_stt_transcriber()
+anti_cheat = get_anti_cheat_monitor()
 
 class AnalysisResponse(BaseModel):
     transcript: str
@@ -32,64 +50,63 @@ class AnalysisResponse(BaseModel):
     sentiment: str
     keywords_found: list[str]
     is_technical: bool
+    final_score: float
 
 @app.get("/")
 async def root():
-    return {"status": "AI Engine Online", "models_loaded": ["Whisper-Base", "RoBERTa-Relevance", "Wav2Vec-Confidence"]}
+    return {
+        "status": "AI Engine Online", 
+        "architecture": "v2.0",
+        "models": ["STT-Whisper", "NLP-RoBERTa", "Audio-Librosa", "Vision-MediaPipe"]
+    }
 
 @app.post("/analyze-audio", response_model=AnalysisResponse)
 async def analyze_audio(file: UploadFile = File(...), question: str = Form(None), skills: str = Form(None)):
     contents = await file.read()
 
-    # ✅ Step 1: Speech → Text
-    transcript = transcribe_audio(contents)
+    # 1. STT: Audio -> Text (Using central transcriber)
+    transcript = transcriber.transcribe(contents)
 
-    # ✅ Step 2: NLP & Audio Processing
-    import tempfile
-    import os
-    
+    # 2. Confidence & Sentiment (Acoustic Prosody)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(contents)
         tmp_path = tmp.name
 
     try:
-        confidence = calculate_confidence(transcript, tmp_path)
+        conf_score, sentiment = calculate_confidence(transcript, tmp_path)
     finally:
-        os.remove(tmp_path)
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
-    keywords = extract_keywords(transcript)
-    sentiment = analyze_sentiment(transcript)
-
-    # Process skills from frontend
-    resume_skills = [s.strip().lower() for s in skills.split(',')] if skills else []
-    if not resume_skills:
-        resume_skills = ["react", "node", "python", "mongodb"]
-
+    # 3. Relevance & NLP (RoBERTa + Heuristics)
     relevance = calculate_relevance(question, transcript) if question else 0.0
+    keywords = extract_keywords(transcript)
     
-    # Identify which resume skills were mentioned
+    # Skills Processing
+    resume_skills = [s.strip().lower() for s in skills.split(',')] if skills else []
     matched_skills = match_skills(transcript, resume_skills)
-    
-    # Combine keywords with matched skills for a better response
     all_keywords = list(set(keywords + matched_skills))
-
-    # Identify if question is technical
+    
     is_tech = is_technical_question(question) if question else False
+
+    # 4. Final Weighted Evaluation
+    final_score = evaluation_engine.calculate_final_score(
+        relevance=relevance,
+        confidence=conf_score,
+        sentiment=sentiment,
+        matched_skills=matched_skills,
+        total_skills=resume_skills
+    )
 
     return AnalysisResponse(
         transcript=transcript,
         relevance_score=relevance,
-        confidence_score=confidence,
+        confidence_score=conf_score,
         sentiment=sentiment,
         keywords_found=all_keywords,
-        is_technical=is_tech
+        is_technical=is_tech,
+        final_score=final_score
     )
-
-
-
-from services.proctoring import engine as proctoring_engine
-from services.reporter import reporter
-from services.questions import question_bank
 
 @app.post("/check-cheating")
 async def check_cheating(
@@ -97,10 +114,12 @@ async def check_cheating(
     tab_switched: bool = Form(False),
     mic_muted: bool = Form(False)
 ):
-    contents = await frame.read()
-    result = await proctoring_engine.analyze_frame(contents)
+    frame_bytes = await frame.read()
     
-    # Add frontend-detected flags to the result
+    # Vision-based check (Gaze + Person Count)
+    result = anti_cheat.analyze_frame(frame_bytes)
+    
+    # Combined logic with browser signals
     if tab_switched:
         result["flags"].append("Tab switching detected")
         result["cheat_detected"] = True
@@ -110,23 +129,59 @@ async def check_cheating(
         
     return result
 
+@app.get("/api/ai/status")
+async def get_ai_status():
+    import json
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(base_path, "ai_models/relevance_scorer/data/training_data.json")
+    checkpoint_path = os.path.join(base_path, "ai_models/relevance_scorer/checkpoints/relevance_model")
+    
+    training_count = 0
+    if os.path.exists(data_path):
+        with open(data_path, "r") as f:
+            training_count = len(json.load(f))
+            
+    is_trained = os.path.exists(checkpoint_path)
+    
+    return {
+        "relevance": {
+            "status": "Fine-tuned" if is_trained else "Base Model",
+            "data_count": training_count,
+            "can_train": training_count >= 5
+        },
+        "confidence": {
+            "status": "Rule-based (V1)",
+            "features": ["Pitch", "Energy", "Silence"]
+        },
+        "anti_cheat": {
+            "status": "MediaPipe Mesh Active",
+            "features": ["Gaze Tracking", "Multi-Face"]
+        }
+    }
+
+@app.post("/api/ai/train-relevance")
+async def train_relevance():
+    from ai_models.relevance_scorer.train import fine_tune
+    thread = threading.Thread(target=fine_tune)
+    thread.start()
+    return {"status": "Training started in background."}
+
+@app.post("/api/generate-questions")
+async def generate_questions(data: dict):
+    skills = data.get("skills", ["general"])
+    position = data.get("position", "Candidate")
+    session = question_generator.generate_session(skills, position)
+    return session
+
 @app.post("/generate-report")
 async def generate_report(data: dict):
-    # Data is expected to be { "results": [...], "warnings": [...] }
     results = data.get("results", [])
     warnings = data.get("warnings", [])
     report = reporter.generate_report(results, warnings)
     return report
 
-@app.post("/api/generate-questions")
-async def generate_questions(data: dict):
-    # Data: { "skills": [...], "position": "..." }
-    skills = data.get("skills", ["general"])
-    position = data.get("position", "Candidate")
-    session = question_bank.generate_session(skills, position)
-    return session
-
 app.include_router(resume.router, prefix="/api")
+app.include_router(admin.router)
 
 if __name__ == "__main__":
     import uvicorn

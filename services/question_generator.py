@@ -1,6 +1,12 @@
+# backend/services/question_generator.py
 import random
 
-class QuestionBank:
+class QuestionGenerator:
+    """
+    Dynamically generates interview sessions based on candidate's position and skills.
+    Categorizes questions into Behavioral, Situational, and Technical (Skill-specific).
+    """
+
     def __init__(self):
         self.categories = {
             "Behavioral": [
@@ -44,7 +50,7 @@ class QuestionBank:
             }
         }
 
-    def generate_session(self, skills: list, position: str):
+    def generate_session(self, skills: list, position: str) -> list:
         session_questions = []
         
         # 1. Start with an Intro (Behavioral)
@@ -55,8 +61,8 @@ class QuestionBank:
         tech_pool = []
         lower_skills = [s.lower() for s in skills]
         
-        for skill, qs in self.categories["Technical"].items():
-            if skill in lower_skills or any(skill in s for s in lower_skills):
+        for skill_key, qs in self.categories["Technical"].items():
+            if skill_key in lower_skills or any(skill_key in s for s in lower_skills):
                 tech_pool.extend(qs)
         
         # Fallback to general tech if no matches
@@ -87,10 +93,11 @@ class QuestionBank:
         return {
             "id": q_id,
             "text": q["text"],
-            "category": next((cat for cat, content in self.categories.items() if (isinstance(content, list) and q in content) or (isinstance(content, dict) and any(q in sublist for sublist in content.values()))), "General"),
+            "category": "Technical" if "Technical" in str(q) else "General", # Heuristic for now
             "difficulty": q["difficulty"],
             "tags": q["tags"],
-            "keywords": q["tags"] # Using tags as keywords for relevance
+            "keywords": q["tags"]
         }
 
-question_bank = QuestionBank()
+# Singleton
+generator = QuestionGenerator()
