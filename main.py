@@ -8,7 +8,7 @@ import json
 import threading
 
 # --- ROUTES ---
-from routes import resume, admin
+from routes import resume, admin, client, auth
 
 # --- AI MODELS ---
 from ai_models.stt import get_stt_transcriber
@@ -182,6 +182,8 @@ async def generate_report(data: dict):
 
 app.include_router(resume.router, prefix="/api")
 app.include_router(admin.router)
+app.include_router(client.router)
+app.include_router(auth.router)
 
 if __name__ == "__main__":
     import uvicorn
