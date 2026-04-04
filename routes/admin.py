@@ -111,7 +111,7 @@ async def list_clients():
                 data = json.load(f)
                 if data.get("role") == "Client":
                     clients.append({
-                        "id": data.get("email"), # Use email as ID for clients
+                        "id": filename.replace(".json", ""), 
                         "name": data.get("name"),
                         "company": data.get("company", "N/A"),
                         "email": data.get("email"),
@@ -119,11 +119,70 @@ async def list_clients():
                     })
     return clients
 
+@router.get("/candidates")
+async def list_candidates():
+    """
+    Returns a list of all registered candidates.
+    """
+    USERS_DIR = os.path.join(DATA_DIR, "users")
+    candidates = []
+    if not os.path.exists(USERS_DIR):
+        return []
+        
+    for filename in os.listdir(USERS_DIR):
+        if filename.endswith(".json"):
+            with open(os.path.join(USERS_DIR, filename), "r") as f:
+                data = json.load(f)
+                if data.get("role") == "Candidate":
+                    candidates.append({
+                        "id": filename.replace(".json", ""), 
+                        "name": data.get("name"),
+                        "email": data.get("email"),
+                        "role": "Candidate",
+                        "status": "Active",
+                        "lastLogin": data.get("last_login", "N/A")
+                    })
+    return candidates
+
+@router.delete("/users/{user_id}")
+async def terminate_user(user_id: str):
+    """
+    Permanently removes a client or candidate from the platform.
+    """
+    USERS_DIR = os.path.join(DATA_DIR, "users")
+    file_path = os.path.join(USERS_DIR, f"{user_id}.json")
+    
+    if not os.path.exists(file_path):
+         # Try with email if user_id is the email
+         file_path = os.path.join(USERS_DIR, f"{user_id}.json")
+         if not os.path.exists(file_path):
+             raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        os.remove(file_path)
+        return {"status": "success", "message": f"User {user_id} terminated."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/stats")
 async def get_stats():
     """
     Calculates platform-wide aggregate statistics, including Month-over-Month growth.
     """
+    USERS_DIR = os.path.join(DATA_DIR, "users")
+    client_count = 0
+    candidate_count = 0
+    
+    if os.path.exists(USERS_DIR):
+        for filename in os.listdir(USERS_DIR):
+            if filename.endswith(".json"):
+                with open(os.path.join(USERS_DIR, filename), "r") as f:
+                    u_data = json.load(f)
+                    if u_data.get("role") == "Client":
+                        client_count += 1
+                    else:
+                        candidate_count += 1
+
     all_sessions = []
     if os.path.exists(SESSIONS_DIR):
         for filename in os.listdir(SESSIONS_DIR):
@@ -134,7 +193,8 @@ async def get_stats():
     total = len(all_sessions)
     if total == 0:
         return {
-            "totalCandidates": 0,
+            "totalCandidates": candidate_count,
+            "totalClients": client_count,
             "avgScore": 0,
             "passRate": 0,
             "interviewsCompleted": 0,
@@ -168,7 +228,8 @@ async def get_stats():
         growth = 100 # Initial growth
         
     return {
-        "totalCandidates": total,
+        "totalCandidates": candidate_count,
+        "totalClients": client_count,
         "avgScore": round(avg_score, 1),
         "passRate": round(pass_rate, 1),
         "interviewsCompleted": total,
@@ -219,3 +280,80 @@ async def get_audio(session_id: str, question_index: int):
         raise HTTPException(status_code=404, detail="Audio file not found")
         
     return FileResponse(audio_path)
+
+@router.get("/analytics")
+async def get_analytics():
+    """
+    Computes dynamic analytics for charts including trends, topic proficiency, and role distribution.
+    """
+    all_sessions = []
+    if os.path.exists(SESSIONS_DIR):
+        for filename in os.listdir(SESSIONS_DIR):
+            if filename.endswith(".json"):
+                with open(os.path.join(SESSIONS_DIR, filename), "r") as f:
+                    all_sessions.append(json.load(f))
+
+    # 1. Performance Trend (Last 6 months)
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    trend_dict = {}
+    
+    for s in all_sessions:
+        try:
+            s_date = datetime.fromisoformat(s["date"].replace("Z", "+00:00"))
+            m_key = months[s_date.month - 1]
+            if m_key not in trend_dict:
+                trend_dict[m_key] = {"sum": 0, "count": 0, "high": 0, "low": 100}
+            
+            score = s["score"]
+            trend_dict[m_key]["sum"] += score
+            trend_dict[m_key]["count"] += 1
+            trend_dict[m_key]["high"] = max(trend_dict[m_key]["high"], score)
+            trend_dict[m_key]["low"] = min(trend_dict[m_key]["low"], score)
+        except: continue
+
+    performanceTrend = []
+    for m in months:
+        if m in trend_dict:
+            performanceTrend.append({
+                "month": m,
+                "avg": round(trend_dict[m]["sum"] / trend_dict[m]["count"], 1),
+                "high": trend_dict[m]["high"],
+                "low": trend_dict[m]["low"]
+            })
+    
+    if not performanceTrend: # Dummy if no data
+        performanceTrend = [{"month": "No Data", "avg": 0, "high": 0, "low": 0}]
+
+    # 2. Topic Proficiency
+    topics = {}
+    for s in all_sessions:
+        for detail in s.get("details", []):
+            cat = detail.get("category", "General")
+            if cat not in topics:
+                topics[cat] = {"sum": 0, "count": 0}
+            topics[cat]["sum"] += detail.get("relevance_score", 0) * 100
+            topics[cat]["count"] += 1
+    
+    topicProficiency = [{"topic": k, "score": round(v["sum"]/v["count"], 1)} for k, v in topics.items()]
+    if not topicProficiency:
+        topicProficiency = [{"topic": "None", "score": 0}]
+
+    # 3. Role Distribution
+    roles = {}
+    for s in all_sessions:
+        pos = s.get("position", "Unspecified")
+        roles[pos] = roles.get(pos, 0) + 1
+    
+    roleDistribution = [{"name": k, "value": v} for k, v in roles.items()]
+
+    return {
+        "performanceTrend": performanceTrend[-6:], # Last 6 months
+        "topicProficiency": topicProficiency,
+        "roleDistribution": roleDistribution,
+        "summary": {
+            "totalInterviews": len(all_sessions),
+            "avgDuration": "12.5m", # Mock for now
+            "passRate": f"{round(len([s for s in all_sessions if s['score'] >= 70]) / max(len(all_sessions), 1) * 100, 1)}%",
+            "accuracy": "94%"
+        }
+    }

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import os
 import json
+import uuid
 from passlib.hash import pbkdf2_sha256
 
 router = APIRouter(prefix="/api/auth")
@@ -41,6 +42,7 @@ async def signup(user: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_data = user.dict()
+    user_data["id"] = str(uuid.uuid4())
     # Hash password (secure storage)
     user_data["password_hash"] = pbkdf2_sha256.hash(user.password)
     del user_data["password"]
@@ -49,6 +51,7 @@ async def signup(user: UserCreate):
         json.dump(user_data, f, indent=2)
     
     return {"status": "success", "user": {
+        "id": user_data["id"],
         "name": user.name,
         "email": user.email,
         "role": user.role,
@@ -69,10 +72,17 @@ async def signin(login: UserLogin):
     if not pbkdf2_sha256.verify(login.password, user_data["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid password")
     
+    # Auto-generate ID for legacy users
+    if "id" not in user_data:
+        user_data["id"] = str(uuid.uuid4())
+        with open(file_path, "w") as f:
+            json.dump(user_data, f, indent=2)
+
     # Return user details without the hash
     return {
         "status": "success",
         "user": {
+            "id": user_data["id"],
             "name": user_data["name"],
             "email": user_data["email"],
             "role": user_data["role"],

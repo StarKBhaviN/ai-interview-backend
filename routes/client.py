@@ -47,8 +47,12 @@ async def list_meetings(client_id: str = None):
             with open(os.path.join(MEETINGS_DIR, filename), "r") as f:
                 meeting_data = json.load(f)
                 
-                # Filter by clientId if provided
+                # Filter by clientId if provided (Employer View)
                 if client_id and meeting_data.get("clientId") != client_id:
+                    continue
+                    
+                # If candidate view (no client_id), only show Open meetings
+                if not client_id and meeting_data.get("status") != "Open":
                     continue
                     
                 # Count candidates for this meeting
@@ -81,6 +85,8 @@ async def get_meeting_questions(code: str):
             with open(os.path.join(MEETINGS_DIR, filename), "r") as f:
                 m = json.load(f)
                 if m.get("code") == code:
+                    if m.get("status") == "Closed":
+                        raise HTTPException(status_code=403, detail="This interview session is now closed.")
                     return {"questions": m.get("questions", []), "title": m.get("title"), "company": m.get("company")}
     raise HTTPException(status_code=404, detail="Meeting not found")
 
