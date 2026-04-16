@@ -39,9 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# AI Singletons
-transcriber = get_stt_transcriber()
-anti_cheat = get_anti_cheat_monitor()
+# AI Singletons are now fetched lazily within endpoints to save memory on startup.
 
 class AnalysisResponse(BaseModel):
     transcript: str
@@ -65,6 +63,7 @@ async def analyze_audio(file: UploadFile = File(...), question: str = Form(None)
     contents = await file.read()
 
     # 1. STT: Audio -> Text (Using central transcriber)
+    transcriber = get_stt_transcriber()
     transcript = transcriber.transcribe(contents)
 
     # 2. Confidence & Sentiment (Acoustic Prosody)
@@ -117,6 +116,7 @@ async def check_cheating(
     frame_bytes = await frame.read()
     
     # Vision-based check (Gaze + Person Count)
+    anti_cheat = get_anti_cheat_monitor()
     result = anti_cheat.analyze_frame(frame_bytes)
     
     # Combined logic with browser signals

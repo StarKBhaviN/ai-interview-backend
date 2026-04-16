@@ -5,9 +5,7 @@ import librosa
 from ai_models.relevance_scorer import get_relevance_scorer
 from ai_models.confidence_analyzer import get_confidence_analyzer
 
-# Load models once
-relevance_engine = get_relevance_scorer()
-confidence_engine = get_confidence_analyzer()
+# Engines are now fetched lazily within functions to save memory.
 
 # ------------------ KEYWORDS ------------------
 def extract_keywords(text: str):
@@ -64,6 +62,7 @@ def calculate_relevance(question: str, answer: str):
         return 0.05
 
     # Use the new fine-tunable inference engine
+    relevance_engine = get_relevance_scorer()
     score = relevance_engine.score(question, answer)
     
     # 2. Length Bonus (Heuristic boost)
@@ -92,6 +91,7 @@ def calculate_confidence(transcript: str, audio_path: str = None):
     # 1. Audio-based (Acoustic Features via Model 3)
     audio_data = {"confidence_score": 0.7, "sentiment": "Neutral"}
     if audio_path:
+        confidence_engine = get_confidence_analyzer()
         audio_data = confidence_engine.analyze(audio_path)
 
     # 2. Transcript-based (Filler words heuristic)

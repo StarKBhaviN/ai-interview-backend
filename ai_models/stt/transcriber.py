@@ -12,7 +12,7 @@ class STTTranscriber:
     Speech-to-Text inference engine using Faster Whisper.
     Centralized in ai_models/stt for modularity.
     """
-    def __init__(self, model_size="base", device="cpu", compute_type="int8"):
+    def __init__(self, model_size="tiny", device="cpu", compute_type="int8"):
         logger.info(f"Initializing WhisperModel ({model_size}) on {device}...")
         self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
 

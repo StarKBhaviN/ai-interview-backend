@@ -3,13 +3,17 @@ import json
 import os
 import re
 
-# Load the AI model once for reuse
-try:
-    nlp = spacy.load("en_core_web_sm")
-except Exception as e:
-    print(f"[skill_extractor.py] Error loading spacy model: {e}")
-    # Force load it if needed or provide a fallback
-    nlp = None
+_nlp = None
+
+def get_spacy_model():
+    global _nlp
+    if _nlp is None:
+        try:
+            _nlp = spacy.load("en_core_web_sm")
+        except Exception as e:
+            print(f"[skill_extractor.py] Error loading spacy model: {e}")
+            _nlp = None
+    return _nlp
 
 def load_skills_db():
     """Reads the skills library from the local JSON file."""
@@ -51,6 +55,7 @@ def extract_skills(text: str) -> dict:
 
     # 2. NER-based Entity Extraction using spaCy
     entities = {}
+    nlp = get_spacy_model()
     if nlp:
         doc = nlp(text)
         for ent in doc.ents:

@@ -6,7 +6,7 @@ class RelevanceScorer:
     """
     Final inference engine for scoring interview answer relevance.
     It attempts to load a fine-tuned checkpoint from 'checkpoints/'.
-    Falls back to 'roberta-base' if no checkpoint is found.
+    Falls back to 'distilroberta-base' if no checkpoint is found.
     """
     def __init__(self, model_path=None):
         base_path = os.path.dirname(__file__)
@@ -15,14 +15,14 @@ class RelevanceScorer:
 
         # 1. Check if fine-tuned model exists
         if not os.path.exists(model_path):
-            print(f"[RelevanceScorer] checkpoint not found at {model_path}. Loading base 'roberta-base' model.")
-            self.model_name = "roberta-base"
+            print(f"[RelevanceScorer] checkpoint not found at {model_path}. Loading base 'distilroberta-base' model.")
+            self.model_name = "distilroberta-base"
         else:
             self.model_name = model_path
 
         # 2. Load tokenizer and model
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+            self.tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 self.model_name, 
                 num_labels=1
